@@ -1,0 +1,36 @@
+
+folder_name = ""
+table_name = ""
+where_statement = "where reading_time_utc >= '2025-01-30 00:00:00.000'"
+select_statement = "*"
+databricks_instance = 'xxxxxxxxxxxxxxx.azuredatabricks.net' 
+
+result_df = spark.sql(f'select {select_statement} from {table_name} {where_statement}')
+
+temp_output_path = f'FileStore/{folder_name}/temp_{table_name}'
+
+result_df.coalesce(1).write.csv(temp_output_path, header=True, mode="overwrite")
+
+import shutil
+import os
+
+files = dbutils.fs.ls(temp_output_path)
+
+csv_file = ""
+for file in files:
+    if file.name.endswith(".csv"):
+        csv_file = file.path
+        break
+
+final_output_path = f'FileStore/{folder_name}/{table_name}.csv' 
+
+dbutils.fs.mv(csv_file, final_output_path)
+
+dbutils.fs.rm(temp_output_path, True)
+
+print(f"File saved as: {final_output_path}")
+
+
+download_link = f'https://{databricks_instance}/files/{folder_name}/{table_name}.csv'
+ 
+displayHTML(f'<a href="{download_link}" target="_blank">Baixar CSV {table_name}.csv</a>')
